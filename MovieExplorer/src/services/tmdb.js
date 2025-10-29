@@ -5,6 +5,10 @@ const BASE = 'https://api.themoviedb.org/3'
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY
 const V4_TOKEN = import.meta.env.VITE_TMDB_V4
 
+function looksLikeV4Token(str) {
+  return typeof str === 'string' && str.split('.').length === 3
+}
+
 function buildUrl(path, params = {}) {
   const url = new URL(`${BASE}${path}`)
   // parâmetros padrão
@@ -13,15 +17,22 @@ function buildUrl(path, params = {}) {
     if (v != null) url.searchParams.set(k, v)
   })
   // se houver API_KEY (v3) adiciona como query param
-  if (API_KEY) url.searchParams.set('api_key', API_KEY)
+  // mas não adiciona se a chave parecer um token v4 (JWT)
+  if (API_KEY && !looksLikeV4Token(API_KEY)) url.searchParams.set('api_key', API_KEY)
   return url.toString()
 }
 
 async function request(path, { params, useV4 = false } = {}) {
   const url = buildUrl(path, params)
   const headers = { 'Content-Type': 'application/json;charset=utf-8' }
-  // se pediu uso do V4 e houver token, adiciona header Authorization
-  if (useV4 && V4_TOKEN) headers.Authorization = `Bearer ${V4_TOKEN}`
+  // Se foi solicitado uso do V4 e houver token, adiciona header Authorization.
+  // Também detecta quando a API_KEY na env é, na verdade, um token v4 (JWT)
+  // — nesses casos usamos o Authorization header em vez de enviá-lo como api_key.
+  if ((useV4 && V4_TOKEN) || (!API_KEY && V4_TOKEN)) {
+    headers.Authorization = `Bearer ${V4_TOKEN}`
+  } else if (API_KEY && looksLikeV4Token(API_KEY)) {
+    headers.Authorization = `Bearer ${API_KEY}`
+  }
 
   const res = await fetch(url, { headers })
   if (!res.ok) {
