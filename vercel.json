@@ -12,14 +12,18 @@
     "routes": [
         {
             "src": "^/assets/(.*)$",
-            "dest": "/assets/$1"
+            "dest": "/MovieExplorer/assets/$1"
         },
         {
             "handle": "filesystem"
         },
         {
+            "src": "^/$",
+            "dest": "/MovieExplorer/index.html"
+        },
+        {
             "src": "^/(.*)$",
-            "dest": "/index.html"
+            "dest": "/MovieExplorer/index.html"
         }
     ]
 }
